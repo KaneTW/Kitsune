@@ -22,12 +22,14 @@ sys.setrecursionlimit(100000)
 # In the future, if the timeline API proves itself to be unreliable, we should probably move to scanning fanclubs individually.
 # https://fantia.jp/api/v1/me/fanclubs',
 
+USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
+
 
 def enable_adult_mode(import_id, jar):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': USER_AGENT},
         cookies=jar,
         proxies=get_proxy()
     )
@@ -42,7 +44,7 @@ def enable_adult_mode(import_id, jar):
         authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/mypage/users/update_rating',
-            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            headers={'user-agent': USER_AGENT},
             cookies=jar,
             proxies=get_proxy(),
             data={
@@ -68,7 +70,7 @@ def disable_adult_mode(import_id, jar):
     authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
     create_scrapper_session(useCloudscraper=False).post(
         'https://fantia.jp/mypage/users/update_rating',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': USER_AGENT},
         cookies=jar,
         proxies=get_proxy(),
         data={
@@ -84,7 +86,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            headers={'user-agent': USER_AGENT},
             cookies=jar,
             proxies=get_proxy()
         )
@@ -122,7 +124,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                 try:
                     post_scraper = create_scrapper_session(useCloudscraper=False).get(
                         f"https://fantia.jp/api/v1/posts/{post_id}",
-                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        headers={'user-agent': USER_AGENT},
                         cookies=jar,
                         proxies=get_proxy()
                     )
@@ -162,7 +164,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                         'fantia',
                         user_id,
                         post_id,
-                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'}
+                        headers={'user-agent': USER_AGENT}
                     )
                     post_model['file']['name'] = reported_filename
                     post_model['file']['path'] = hash_filename
@@ -170,6 +172,16 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                 for content in post_data['post']['post_contents']:
                     if (content['visible_status'] != 'visible'):
                         continue
+                    if content['title']:
+                        post_model['content']+= f"""
+                            <h3 class="post_entry_title">{content['title']}</h3>
+                            """
+                    if content['comment']:
+                        post_model['content'] += f"""
+                            <div class="post_entry_content">
+                                <pre>{content['comment']}</pre>
+                            </div>
+                            """
                     if content['category'] == 'photo_gallery':
                         for photo in content['post_content_photos']:
                             reported_filename, hash_filename, _ = download_file(
@@ -178,7 +190,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                                 user_id,
                                 post_id,
                                 cookies=jar,
-                                headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'}
+                                headers={'user-agent': USER_AGENT}
                             )
                             post_model['attachments'].append({
                                 'name': reported_filename,
@@ -192,7 +204,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                             post_id,
                             name=content['filename'],
                             cookies=jar,
-                            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'}
+                            headers={'user-agent': USER_AGENT}
                         )
                         post_model['attachments'].append({
                             'name': reported_filename,
@@ -216,7 +228,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                                     user_id,
                                     post_id,
                                     cookies=jar,
-                                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                                    headers={'user-agent': USER_AGENT},
                                 )
                                 post_model['attachments'].append({
                                     'name': reported_filename,
@@ -245,7 +257,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
             try:
                 scraper = create_scrapper_session(useCloudscraper=False).get(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                    headers={'user-agent': USER_AGENT},
                     cookies=jar,
                     proxies=get_proxy()
                 )
@@ -265,7 +277,7 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
 def get_paid_fanclubs(import_id, jar):
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/users/plans?type=not_free',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': USER_AGENT},
         cookies=jar,
         proxies=get_proxy()
     )
