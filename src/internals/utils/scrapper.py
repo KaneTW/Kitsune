@@ -3,6 +3,9 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
+
+
 def create_scrapper_session(
     useCloudscraper=True,
     retries=10,
@@ -14,6 +17,8 @@ def create_scrapper_session(
         session = cloudscraper.create_scraper()
     else:
         session = Session()
+
+    session.headers.update({'user-agent': USER_AGENT})
     retry = Retry(
         total=retries,
         read=retries,
