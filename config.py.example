@@ -21,6 +21,13 @@ rsync_data_options = [
     '--ignore-existing'
 ]
 
+# Set to only allow certain services on this instance
+# permitted_services = ['fantia']
+permitted_services = None
+
+# sentry information
+sentry_dsn = None
+
 # database info
 database_host = 'localhost'
 database_dbname = 'kemonodb'
@@ -62,3 +69,5 @@ salt = "lolololololololol"
 # enable/disable redis key pushing
 pubsub = True
 pubsub_queue_limit = 200
+
+anticap_token = None

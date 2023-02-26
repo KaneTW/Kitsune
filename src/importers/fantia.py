@@ -22,16 +22,80 @@ sys.setrecursionlimit(100000)
 # In the future, if the timeline API proves itself to be unreliable, we should probably move to scanning fanclubs individually.
 # https://fantia.jp/api/v1/me/fanclubs',
 
-USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
+ua = (
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+    'AppleWebKit/537.36 (KHTML, like Gecko) '
+    'Chrome/109.0.0.0 Safari/537.36'
+)
 
 
-def enable_adult_mode(import_id, jar):
+def make_safe_request(import_id, *args, **kwargs) -> requests.models.Response:
+    ''' Makes requests while automatically handling Fantia captchas. '''
+
+    proxies = kwargs.get('proxies', None)
+    jar = kwargs.get('cookies', None)
+    (url, *_) = args + (None,)
+
+    scraper = create_scrapper_session(useCloudscraper=False)
+    response = scraper.get(*args, **kwargs)
+    response.raise_for_status()
+    data = response.text
+
+    soup = BeautifulSoup(data, 'html.parser')
+    if soup.select_one('form#recaptcha_verify'):
+        log(import_id, f'Encountered captcha on URL {url}, solving...')
+        authenticity_token = soup.select_one('input[name=authenticity_token]')['value']
+        recaptcha_site_key = soup.select_one('input[name=recaptcha_site_key]')['value']
+        task = scraper.post('https://api.anti-captcha.com/createTask', data=json.dumps(dict(
+            clientKey=config.anticap_token,
+            softId=0,
+            task=dict(
+                type='RecaptchaV3TaskProxyless',
+                websiteURL='https://fantia.jp/recaptcha',
+                websiteKey=recaptcha_site_key,
+                minScore=0.3,
+                pageAction='contact',
+                isEnterprise=False
+            )
+        )))
+        task_data = task.json()
+
+        recaptcha_response = None
+        while recaptcha_response is None:
+            task_status = scraper.post(
+                'https://api.anti-captcha.com/getTaskResult',
+                data=json.dumps(dict(
+                    clientKey=config.anticap_token,
+                    taskId=task_data['taskId']
+                ))
+            ).json()
+            if task_status['status'] == 'ready':
+                recaptcha_response = task_status['solution']['gRecaptchaResponse']
+        create_scrapper_session(useCloudscraper=False).post(
+            'https://fantia.jp/recaptcha/verify',
+            headers={'user-agent': ua},
+            proxies=proxies,
+            cookies=jar,
+            data=dict(
+                utf8='✓',
+                authenticity_token=authenticity_token,
+                recaptchaResponse=recaptcha_response,
+                commit='ページを表示する'
+            )
+        ).raise_for_status()
+        # Don't loop back if the original URL was to the `/recaptcha` endpoint
+        if 'https://fantia.jp/recaptcha' not in url:
+            return make_safe_request(import_id, *args, **kwargs)
+    return response
+
+
+def enable_adult_mode(import_id, jar, proxies):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
-        headers={'user-agent': USER_AGENT},
-        cookies=jar,
-        proxies=get_proxy()
+        headers={'user-agent': ua},
+        proxies=proxies,
+        cookies=jar
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
@@ -44,9 +108,13 @@ def enable_adult_mode(import_id, jar):
         authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/mypage/users/update_rating',
+<<<<<<< HEAD
             headers={'user-agent': USER_AGENT},
+=======
+            headers={'user-agent': ua},
+            proxies=proxies,
+>>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
             cookies=jar,
-            proxies=get_proxy(),
             data={
                 "utf8": '✓',
                 "authenticity_token": authenticity_token,
@@ -58,11 +126,11 @@ def enable_adult_mode(import_id, jar):
     return False
 
 
-def disable_adult_mode(import_id, jar):
+def disable_adult_mode(import_id, jar, proxies):
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
-        cookies=jar,
-        proxies=get_proxy()
+        proxies=proxies,
+        cookies=jar
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
@@ -70,9 +138,13 @@ def disable_adult_mode(import_id, jar):
     authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
     create_scrapper_session(useCloudscraper=False).post(
         'https://fantia.jp/mypage/users/update_rating',
+<<<<<<< HEAD
         headers={'user-agent': USER_AGENT},
+=======
+        headers={'user-agent': ua},
+        proxies=proxies,
+>>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
         cookies=jar,
-        proxies=get_proxy(),
         data={
             "utf8": '✓',
             "authenticity_token": authenticity_token,
@@ -82,13 +154,19 @@ def disable_adult_mode(import_id, jar):
     ).raise_for_status()
 
 
-def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
+def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
+<<<<<<< HEAD
             headers={'user-agent': USER_AGENT},
             cookies=jar,
             proxies=get_proxy()
+=======
+            headers={'user-agent': ua},
+            proxies=proxies,
+            cookies=jar
+>>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
         )
         scraper_data = scraper.text
         scraper.raise_for_status()
@@ -122,11 +200,30 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                     continue
 
                 try:
+                    post_page_scraper = create_scrapper_session(useCloudscraper=False).get(
+                        f"https://fantia.jp/posts/{post_id}",
+                        headers={'user-agent': ua},
+                        proxies=proxies,
+                        cookies=jar,
+                    )
+                    post_page_data = post_page_scraper.text
+                    post_page_scraper.raise_for_status()
+                except requests.HTTPError as exc:
+                    log(import_id, f'Status code {exc.response.status_code} when contacting Fantia post page.', 'exception')
+                    continue
+
+                soup = BeautifulSoup(post_page_data, 'html.parser')
+                csrf_token = soup.select_one('meta[name="csrf-token"]')['content']
+
+                try:
                     post_scraper = create_scrapper_session(useCloudscraper=False).get(
                         f"https://fantia.jp/api/v1/posts/{post_id}",
-                        headers={'user-agent': USER_AGENT},
+                        headers={
+                            'X-CSRF-Token': csrf_token,
+                            'user-agent': ua
+                        },
+                        proxies=proxies,
                         cookies=jar,
-                        proxies=get_proxy()
                     )
                     post_data = post_scraper.json()
                     post_scraper.raise_for_status()
@@ -164,7 +261,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                         'fantia',
                         user_id,
                         post_id,
-                        headers={'user-agent': USER_AGENT}
+                        headers={'user-agent': ua},
+                        proxies=proxies
                     )
                     post_model['file']['name'] = reported_filename
                     post_model['file']['path'] = hash_filename
@@ -190,7 +288,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                                 user_id,
                                 post_id,
                                 cookies=jar,
-                                headers={'user-agent': USER_AGENT}
+                                headers={'user-agent': ua},
+                                proxies=proxies
                             )
                             post_model['attachments'].append({
                                 'name': reported_filename,
@@ -204,7 +303,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                             post_id,
                             name=content['filename'],
                             cookies=jar,
-                            headers={'user-agent': USER_AGENT}
+                            headers={'user-agent': ua},
+                            proxies=proxies
                         )
                         post_model['attachments'].append({
                             'name': reported_filename,
@@ -228,7 +328,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                                     user_id,
                                     post_id,
                                     cookies=jar,
-                                    headers={'user-agent': USER_AGENT},
+                                    headers={'user-agent': ua},
+                                    proxies=proxies
                                 )
                                 post_model['attachments'].append({
                                     'name': reported_filename,
@@ -257,9 +358,9 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
             try:
                 scraper = create_scrapper_session(useCloudscraper=False).get(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-                    headers={'user-agent': USER_AGENT},
-                    cookies=jar,
-                    proxies=get_proxy()
+                    headers={'user-agent': ua},
+                    proxies=proxies,
+                    cookies=jar
                 )
                 scraper_data = scraper.text
                 scraper.raise_for_status()
@@ -274,17 +375,29 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
             return
 
 
-def get_paid_fanclubs(import_id, jar):
+def get_paid_fanclubs(import_id, jar, proxies):
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/users/plans?type=not_free',
-        headers={'user-agent': USER_AGENT},
+        headers={'user-agent': ua},
         cookies=jar,
-        proxies=get_proxy()
+        proxies=proxies
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
     soup = BeautifulSoup(scraper_data, 'html.parser')
     return set(fanclub_link["href"].lstrip("/fanclubs/") for fanclub_link in soup.select("div.mb-5-children > div:nth-of-type(1) a[href^=\"/fanclubs\"]"))
+
+
+def get_fanclubs(import_id, jar, proxies):
+    scraper = create_scrapper_session(useCloudscraper=False).get(
+        'https://fantia.jp/api/v1/me/fanclubs',
+        headers={'user-agent': ua},
+        proxies=proxies,
+        cookies=jar
+    )
+    scraper.raise_for_status()
+    scraper_data = scraper.json()
+    return scraper_data['fanclub_ids']
 
 
 def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id):  # noqa: C901
@@ -306,9 +419,13 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
     jar = requests.cookies.RequestsCookieJar()
     jar.set('_session_id', key)
 
+    proxies = get_proxy()
+    if proxies:
+        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
+        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
     try:
-        mode_switched = enable_adult_mode(import_id, jar)
-        fanclub_ids = get_paid_fanclubs(import_id, jar)
+        mode_switched = enable_adult_mode(import_id, jar, proxies)
+        fanclub_ids = get_fanclubs(import_id, jar, proxies)
     except:
         log(import_id, "Error occurred during preflight. Stopping import.", 'exception')
         if (key_id):
@@ -324,15 +441,37 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
 
     if len(fanclub_ids) > 0:
         for fanclub_id in fanclub_ids:
-            # Push logging data.
-            push_state('artists', fanclub_id)
-            # Begin importing.
-            log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
-            import_fanclub(fanclub_id, import_id, jar)
+            # Determine if this fanclub has a paid subscription.
+            scraper = create_scrapper_session(useCloudscraper=False).get(
+                f'https://fantia.jp/api/v1/fanclubs/{fanclub_id}',
+                headers={'user-agent': ua},
+                proxies=proxies,
+                cookies=jar
+            )
+            scraper.raise_for_status()
+            scraper_data = scraper.json()
+            should_import_fanclub = False
+            for plan in scraper_data['fanclub']['plans']:
+                if plan['price'] > 0 and plan['order']['status'] == 'joined':
+                    should_import_fanclub = True
+                    break
+            if should_import_fanclub:
+                # Push logging data.
+                push_state('artists', fanclub_id)
+                # Begin importing.
+                log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
+                import_fanclub(fanclub_id, import_id, jar, proxies)
+                continue
+            log(
+                import_id,
+                'No paid subscription found for fanclub '
+                f'{fanclub_id}, skipping...',
+                to_client=True
+            )
     else:
         log(import_id, "No paid subscriptions found. No posts will be imported.", to_client=True)
 
     if (mode_switched):
-        disable_adult_mode(import_id, jar)
+        disable_adult_mode(import_id, jar, proxies)
 
     log(import_id, "Finished scanning for posts.")
