@@ -17,7 +17,7 @@ from typing import TypedDict, Callable
 from threading import Thread
 
 icons = Blueprint('icons', __name__)
-icon_path = Path('icons')
+icon_path = Path(config.branding_download_path, 'icons')
 
 
 class ServiceDataType(IntEnum):
@@ -60,7 +60,7 @@ service_icon_information = {
     'fanbox': IconInformationEntry(
         cloudflare=False,
         data_url='https://api.fanbox.cc/creator.get?userId={user_id}',
-        data_req_headers={},
+        data_req_headers={"origin":"https://fanbox.cc"},
         data_type=ServiceDataType.JSON,
         icon_url=lambda data: data['body']['user']['iconUrl']
     ),

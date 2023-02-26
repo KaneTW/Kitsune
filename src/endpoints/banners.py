@@ -15,7 +15,7 @@ from typing import TypedDict, Callable
 from threading import Thread
 
 banners = Blueprint('banners', __name__)
-banners_path = Path('banners')
+banners_path = Path(config.branding_download_path, 'banners')
 
 
 class ServiceDataType(IntEnum):
@@ -42,7 +42,7 @@ service_banner_information = {
     'fanbox': BannerInformationEntry(
         cloudflare=False,
         data_url='https://api.fanbox.cc/creator.get?userId={user_id}',
-        data_req_headers={},
+        data_req_headers={"origin":"https://fanbox.cc"},
         data_type=ServiceDataType.JSON,
         banner_url=lambda data: data['body']['coverImageUrl']
     ),

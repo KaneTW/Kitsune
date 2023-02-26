@@ -108,12 +108,8 @@ def enable_adult_mode(import_id, jar, proxies):
         authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/mypage/users/update_rating',
-<<<<<<< HEAD
-            headers={'user-agent': USER_AGENT},
-=======
             headers={'user-agent': ua},
             proxies=proxies,
->>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
             cookies=jar,
             data={
                 "utf8": '✓',
@@ -138,12 +134,8 @@ def disable_adult_mode(import_id, jar, proxies):
     authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
     create_scrapper_session(useCloudscraper=False).post(
         'https://fantia.jp/mypage/users/update_rating',
-<<<<<<< HEAD
-        headers={'user-agent': USER_AGENT},
-=======
         headers={'user-agent': ua},
         proxies=proxies,
->>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
         cookies=jar,
         data={
             "utf8": '✓',
@@ -158,15 +150,9 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-<<<<<<< HEAD
-            headers={'user-agent': USER_AGENT},
-            cookies=jar,
-            proxies=get_proxy()
-=======
             headers={'user-agent': ua},
             proxies=proxies,
             cookies=jar
->>>>>>> 85c6d490ceb75da78ab9b804c26a87d4082bfa03
         )
         scraper_data = scraper.text
         scraper.raise_for_status()
