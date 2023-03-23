@@ -44,7 +44,7 @@ def _get_connection(self, url, proxies=None):  # Monkeypatch.
 
 def create_scrapper_session(
     useCloudscraper=True,
-    retries=10,
+    retries=5,
     backoff_factor=0.3,
     status_forcelist=(500, 502, 504, 423)
 ):

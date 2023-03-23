@@ -163,8 +163,9 @@ def download_file(
         kwargs.pop('proxies')
 
     for i in range(tries):
+        real_proxy = proxies or get_proxy()
         try:
-            r = requests.get(url, stream=True, proxies=proxies or get_proxy(), **kwargs)
+            r = requests.get(url, stream=True, proxies=real_proxy, **kwargs)
             r.raw.read = functools.partial(r.raw.read, decode_content=True)
             r.raise_for_status()
             # Should retry on connection error
@@ -224,6 +225,13 @@ def download_file(
             return reported_filename, '/' + hash_filename, r
         except requests.HTTPError as e:
             raise e
+        except requests.ConnectionError as e:
+            proxy = real_proxy['http']
+            try:
+                config.proxies.remove(proxy)
+            except ValueError:
+                pass
+            continue
         except:
             if i < tries - 1:  # i is zero indexed
                 continue

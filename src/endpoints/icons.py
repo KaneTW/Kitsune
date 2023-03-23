@@ -91,7 +91,14 @@ service_icon_information = {
         data_req_headers={},
         data_type=ServiceDataType.HTML,
         icon_url=lambda data: BeautifulSoup(data, 'html.parser').find_all('a', class_='profile-gallery-link')[0]['href'],
-    )
+    ),
+    'afdian': IconInformationEntry(
+        cloudflare=False,
+        data_url='https://afdian.net/api/user/get-profile?user_id={user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.JSON,
+        icon_url=lambda data: data['data']['user']['avatar']
+    ),
 }
 
 

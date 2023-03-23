@@ -169,7 +169,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     while True:
         for post in scraped_posts:
             try:
-                user_id = fanclub_id
+                user_id = str(fanclub_id)
                 post_id = post.select_one('a.link-block')['href'].lstrip('/posts/')
 
                 if len(list(filter(lambda artist: artist['id'] == user_id and artist['service'] == 'fantia', dnp))) > 0:
@@ -182,8 +182,8 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                 if not flagged_post_ids_of_users.get(user_id):
                     flagged_post_ids_of_users[user_id] = get_all_artist_flagged_post_ids('fantia', user_id)
                 if len(list(filter(lambda post: post['id'] == post_id, post_ids_of_users[user_id]))) > 0 and len(list(filter(lambda flag: flag['id'] == post_id, flagged_post_ids_of_users[user_id]))) == 0:
-                    log(import_id, f'Skipping post {post_id} from user {user_id} because already exists', to_client=True)
-                    continue
+                    log(import_id, f'(Not) Skipping post {post_id} from user {user_id} because already exists', to_client=True)
+                    #continue
 
                 try:
                     post_page_scraper = create_scrapper_session(useCloudscraper=False).get(
@@ -406,9 +406,9 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
     jar.set('_session_id', key)
 
     proxies = get_proxy()
-    if proxies:
-        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
-        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
+    #if proxies:
+    #    cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
+    #    proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
     try:
         mode_switched = enable_adult_mode(import_id, jar, proxies)
         fanclub_ids = get_fanclubs(import_id, jar, proxies)
@@ -427,6 +427,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
 
     if len(fanclub_ids) > 0:
         for fanclub_id in fanclub_ids:
+            fanclub_id = str(fanclub_id)
             # Determine if this fanclub has a paid subscription.
             scraper = create_scrapper_session(useCloudscraper=False).get(
                 f'https://fantia.jp/api/v1/fanclubs/{fanclub_id}',

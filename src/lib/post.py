@@ -131,6 +131,16 @@ def post_flagged(service, artist_id, post_id):
     return len(existing_flags) > 0
 
 
+def afdian_post_exists(user_id, post_id):
+    conn = get_raw_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM afdian_posts WHERE id = %s AND user_id = %s", (post_id, user_id))
+    existing_posts = cursor.fetchall()
+    cursor.close()
+    return_conn(conn)
+    return len(existing_posts) > 0
+
+
 def discord_post_exists(server_id, channel_id, post_id):
     conn = get_raw_conn()
     cursor = conn.cursor()

@@ -17,6 +17,7 @@ from src.importers import discord
 from src.importers import fantia
 from src.importers import onlyfans
 from src.importers import jd2
+from src.importers import afdian
 from setproctitle import setthreadtitle
 # a function that first runs existing import requests in a staggered manner (they may be incomplete as importers should delete their keys when they are done) then watches redis for new keys and handles queueing
 # needs to be run in a thread itself
@@ -62,6 +63,7 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                         delete_keys([key])
                         continue
                     if config.permitted_services and key_data['service'] not in config.permitted_services:
+                        print(f"{key_data['service']} not permitted")
                         continue
                     imports += [(key, import_id, key_data)]
 
@@ -85,16 +87,18 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                     service = key_data['service']
                     allowed_to_auto_import = key_data.get('auto_import', False)
                     # allowed_to_save_session = key_data.get('save_session_key', False)
-                    # allowed_to_scrape_dms = key_data.get('save_dms', False)
+                    allowed_to_scrape_dms = key_data.get('save_dms', False)
                     channel_ids = key_data.get('channel_ids')
                     contributor_id = key_data.get('contributor_id')
                     if service == 'patreon':
-                        continue
+                        target = patreon.import_posts
+                        args = (service_key, allowed_to_scrape_dms, contributor_id, allowed_to_auto_import, key_id)
                     elif service == 'fanbox':
                         target = fanbox.import_posts
                         args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                     elif service == 'afdian':
-                        continue
+                        target = afdian.import_posts
+                        args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                     elif service == 'boosty':
                         continue
                     elif service == 'subscribestar':

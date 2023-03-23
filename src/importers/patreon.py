@@ -490,7 +490,7 @@ def get_current_user_campaign(key, import_id):
         scraper_data = scraper.json()
         scraper.raise_for_status()
     except requests.HTTPError as e:
-        log(import_id, f"Status code {e.response.status_code} when contacting Patreon current user API.", 'exception')
+        log(import_id, f"Status code {e.response.status_code} when contacting Patreon current user API. {key}", 'exception')
         raise
     except Exception:
         log(import_id, 'Error connecting to cloudscraper. Please try again.', 'exception')
@@ -720,6 +720,7 @@ def import_comments(url, key, post_id, user_id, import_id, existing_comment_ids)
 def import_campaign_page(url, key, import_id, contributor_id=None, allowed_to_auto_import=None, key_id=None):  # noqa: C901
     try:
         scraper = create_scrapper_session().get(url, cookies={'session_id': key}, proxies=get_proxy())
+        print(scraper.text)
         scraper_data = scraper.json()
         scraper.raise_for_status()
     except requests.HTTPError as e:

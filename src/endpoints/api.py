@@ -21,6 +21,7 @@ from ..importers import fanbox
 from ..importers import subscribestar
 from ..importers import gumroad
 from ..importers import discord
+from ..importers import afdian
 from ..importers import fantia
 api = Blueprint('api', __name__)
 
@@ -107,6 +108,9 @@ def import_api():
     elif service == 'discord':
         target = discord.import_posts
         args = (key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, None)
+    elif service == 'afdian':
+        target = afdian.import_posts
+        args = (key, contributor_id, allowed_to_auto_import, None)
 
     if target is not None and args is not None:
         logger.log(import_id, f'Starting import. Your import id is {import_id}.')

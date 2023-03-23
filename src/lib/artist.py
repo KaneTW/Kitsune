@@ -50,7 +50,7 @@ def get_all_artist_post_ids(service, artist_id, fields=['id']):
     conn = get_raw_conn()
     cursor = conn.cursor()
     query = "SELECT {fields} FROM posts WHERE \"user\" = %s AND service = %s"
-    cursor.execute(query.format(fields=', '.join(fields)), (artist_id, service,))
+    cursor.execute(query.format(fields=', '.join(fields)), (str(artist_id), service,))
     existing_posts = cursor.fetchall()
     cursor.close()
     return_conn(conn)
@@ -205,6 +205,18 @@ def index_artists():  # noqa: C901
                     "name": post["user"],
                     "service": "onlyfans"
                 }
+            elif post["service"] == "afdian":
+                resp = requests.get('https://afdian.net/api/user/get-profile?user_id=' + post['user'], proxies=get_proxy()).json()
+                if resp['ec'] != 200:
+                    print(f"Failed to index {post['user']}")
+                    continue
+                model = {
+                    "id": post["user"],
+                    "name": resp['data']['user']['name'],
+                    "service": "afdian"
+                }
+
+
             elif is_development:
                 from development import service_name
 

@@ -578,9 +578,9 @@ def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=Non
         update_state()
 
     proxies = get_proxy()
-    if proxies:
-        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
-        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
+#    if proxies:
+#        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
+#        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
 
     get_newsletters(import_id, key, proxies)
     # this block creates a list of campaign ids of both supported and canceled subscriptions within the month
